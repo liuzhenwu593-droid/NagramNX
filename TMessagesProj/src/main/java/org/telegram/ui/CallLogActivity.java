@@ -2137,10 +2137,11 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 	}
 
 	private void callDialpadNumber(String rawNumber, BottomSheet sheet) {
-		String phone = rawNumber.replaceAll("[^0-9+]", "");
-		if (phone.startsWith("+")) {
-			phone = phone.substring(1);
+		String rawPhone = rawNumber.replaceAll("[^0-9+]", "");
+		if (rawPhone.startsWith("+")) {
+			rawPhone = rawPhone.substring(1);
 		}
+		final String phone = rawPhone;
 		if (TextUtils.isEmpty(phone)) {
 			return;
 		}
