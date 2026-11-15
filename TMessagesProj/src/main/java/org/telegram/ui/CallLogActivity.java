@@ -13,8 +13,10 @@ import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -28,6 +30,7 @@ import android.text.Layout;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.TextUtils;
 import android.text.style.ImageSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -42,6 +45,7 @@ import tw.nekomimi.nekogram.helpers.MainTabsHelper;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
@@ -83,6 +87,7 @@ import org.telegram.ui.Components.FragmentFloatingButton;
 import org.telegram.ui.Components.FragmentContextView;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.voip.VoIPHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.NumberTextView;
 import org.telegram.ui.Components.ProgressButton;
@@ -757,6 +762,10 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		otherItem = menu.addItem(10, R.drawable.ic_ab_other);
 		otherItem.setContentDescription(getString(R.string.AccDescrMoreOptions));
 		otherItem.setOnClickListener(v -> showItemOptions());
+
+		// iOS-style dialpad: like iOS Telegram's keypad on the Calls tab.
+		ActionBarMenuItem keypadItem = menu.addItem(11, R.drawable.msg_calls_solar);
+		keypadItem.setOnClickListener(v -> showDialpad());
 
 		listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, this::onLongClick);
 		listView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourceProvider));
@@ -2025,6 +2034,136 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 				AndroidUtilities.runOnUIThread(done);
 			}
 		}));
+	}
+
+	// iOS-style dialpad (bottom sheet with a 3x4 key grid, like iOS Telegram's
+	// keypad on the Calls tab). Dial a number to call that Telegram contact;
+	// unknown numbers fall back to the system dialer.
+	private void showDialpad() {
+		Context context = getParentActivity();
+		if (context == null) {
+			return;
+		}
+		final BottomSheet sheet = new BottomSheet(context, false, resourceProvider);
+		sheet.setApplyTopPadding(false);
+
+		LinearLayout root = new LinearLayout(context);
+		root.setOrientation(LinearLayout.VERTICAL);
+		root.setPadding(dp(16), dp(8), dp(16), dp(24));
+
+		final TextView display = new TextView(context);
+		display.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 32);
+		display.setGravity(Gravity.CENTER);
+		display.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+		display.setMinHeight(dp(48));
+		root.addView(display, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
+
+		final StringBuilder number = new StringBuilder();
+		final String[][] keys = {
+				{"1", ""}, {"2", "ABC"}, {"3", "DEF"},
+				{"4", "GHI"}, {"5", "JKL"}, {"6", "MNO"},
+				{"7", "PQRS"}, {"8", "TUV"}, {"9", "WXYZ"},
+				{"*", ""}, {"0", "+"}, {"#", ""}
+		};
+		for (int row = 0; row < 4; row++) {
+			LinearLayout rowLayout = new LinearLayout(context);
+			rowLayout.setOrientation(LinearLayout.HORIZONTAL);
+			for (int col = 0; col < 3; col++) {
+				final String digit = keys[row * 3 + col][0];
+				final String letters = keys[row * 3 + col][1];
+				LinearLayout key = new LinearLayout(context);
+				key.setOrientation(LinearLayout.VERTICAL);
+				key.setGravity(Gravity.CENTER);
+				key.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourceProvider), Theme.RIPPLE_MASK_ROUNDRECT_6DP));
+				TextView digitView = new TextView(context);
+				digitView.setText(digit);
+				digitView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 28);
+				digitView.setGravity(Gravity.CENTER);
+				digitView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+				key.addView(digitView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+				if (!TextUtils.isEmpty(letters)) {
+					TextView lettersView = new TextView(context);
+					lettersView.setText(letters);
+					lettersView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 10);
+					lettersView.setGravity(Gravity.CENTER);
+					lettersView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourceProvider));
+					key.addView(lettersView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+				}
+				key.setOnClickListener(v -> {
+					number.append(digit);
+					display.setText(number.toString());
+				});
+				if ("0".equals(digit)) {
+					key.setOnLongClickListener(v -> {
+						number.append("+");
+						display.setText(number.toString());
+						return true;
+					});
+				}
+				rowLayout.addView(key, LayoutHelper.createLinear(0, dp(64), 1f, 4, 4, 4, 4));
+			}
+			root.addView(rowLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+		}
+
+		LinearLayout bottomRow = new LinearLayout(context);
+		bottomRow.setOrientation(LinearLayout.HORIZONTAL);
+		bottomRow.setGravity(Gravity.CENTER);
+		// spacer to center the call button
+		View spacerLeft = new View(context);
+		bottomRow.addView(spacerLeft, LayoutHelper.createLinear(0, dp(64), 1f));
+		FrameLayout callButton = new FrameLayout(context);
+		callButton.setBackground(Theme.createRoundRectDrawable(dp(32), 0xFF34C759));
+		ImageView callIcon = new ImageView(context);
+		callIcon.setImageResource(R.drawable.msg_calls_solar);
+		callIcon.setColorFilter(Color.WHITE);
+		callButton.addView(callIcon, LayoutHelper.createFrame(28, 28, Gravity.CENTER));
+		callButton.setOnClickListener(v -> callDialpadNumber(number.toString(), sheet));
+		bottomRow.addView(callButton, LayoutHelper.createLinear(dp(64), dp(64), 0, 4, 4, 4, 4));
+		ImageView deleteButton = new ImageView(context);
+		deleteButton.setImageResource(R.drawable.baseline_backspace_24);
+		deleteButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourceProvider), PorterDuff.Mode.SRC_IN));
+		deleteButton.setOnClickListener(v -> {
+			if (number.length() > 0) {
+				number.deleteCharAt(number.length() - 1);
+				display.setText(number.toString());
+			}
+		});
+		deleteButton.setPadding(dp(16), dp(16), dp(16), dp(16));
+		bottomRow.addView(deleteButton, LayoutHelper.createLinear(0, dp(64), 1f, Gravity.CENTER_VERTICAL));
+		root.addView(bottomRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
+
+		sheet.setCustomView(root);
+		sheet.show();
+	}
+
+	private void callDialpadNumber(String rawNumber, BottomSheet sheet) {
+		String phone = rawNumber.replaceAll("[^0-9+]", "");
+		if (phone.startsWith("+")) {
+			phone = phone.substring(1);
+		}
+		if (TextUtils.isEmpty(phone)) {
+			return;
+		}
+		TLRPC.TL_contact contact = ContactsController.getInstance(currentAccount).contactsByPhone.get(phone);
+		TLRPC.User user = contact != null ? getMessagesController().getUser(contact.user_id) : null;
+		if (user != null) {
+			sheet.dismiss();
+			TLRPC.UserFull userFull = getMessagesController().getUserFull(user.id);
+			VoIPHelper.startCall(user, false, userFull != null && userFull.video_calls_available, getParentActivity(), userFull, getAccountInstance());
+			return;
+		}
+		AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity(), resourceProvider);
+		builder.setTitle(getString(R.string.Calls));
+		builder.setMessage(AndroidUtilities.replaceTags(getString(R.string.NoResult)));
+		builder.setPositiveButton(getString(R.string.Call), (dialog, which) -> {
+			Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:+" + phone));
+			try {
+				getParentActivity().startActivity(intent);
+			} catch (Exception ignore) {
+			}
+		});
+		builder.setNegativeButton(getString(R.string.Cancel), null);
+		builder.show();
 	}
 
 	private void showItemOptions() {
