@@ -306,7 +306,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     public static final int MAIN_TABS_HEIGHT_WITH_MARGINS = MAIN_TABS_HEIGHT + MAIN_TABS_MARGIN * 2;
     public static final int FILTER_TABS_HEIGHT = MainTabsHelper.FILTER_TABS_HEIGHT;
     public static final int SEARCH_TABS_HEIGHT = 36 + 7 + 7;
-    public static final int SEARCH_FIELD_HEIGHT = 48;
+    public static final int SEARCH_FIELD_HEIGHT = 36;
+    public static final int LARGE_TITLE_HEIGHT = 52;
 
     private static final int ANIMATOR_ID_SEARCH_VISIBLE = 1;
     private static final int ANIMATOR_ID_DONE_BUTTON_VISIBLE = 2;
@@ -503,6 +504,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private FragmentSearchField fragmentSearchField;
+    private TextView largeTitleView;
     private SearchTextWatcher fragmentSearchFieldWatcher;
 
     private SearchTabsAndFiltersLayout searchTabsAndFiltersLayout;
@@ -1101,6 +1103,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     ));
                 }
             }
+            if (largeTitleView != null) {
+                largeTitleView.setTranslationY(scrollYOffset + tabsYOffset + storiesOverscroll);
+                largeTitleView.setAlpha(Utilities.clamp(1f + (scrollYOffset + tabsYOffset) / dp(LARGE_TITLE_HEIGHT), 0f, 1f) * (1f - searchAnimationProgress) * (1f - progressToActionMode));
+            }
             updateContextViewPosition();
             updateStoriesViewAlpha(storiesAlpha);
             super.dispatchDraw(canvas);
@@ -1298,8 +1304,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         childTop = lp.topMargin;
                 }
 
-                if (child == fragmentSearchField || child == searchTabsAndFiltersLayout || child == dialogStoriesCell) {
+                if (child == largeTitleView) {
                     childTop = actionBar.getMeasuredHeight();
+                } else if (child == fragmentSearchField || child == searchTabsAndFiltersLayout || child == dialogStoriesCell) {
+                    childTop = actionBar.getMeasuredHeight() + getLargeTitleHeight();
                     if (child != fragmentSearchField && child != dialogStoriesCell && child != searchTabsAndFiltersLayout) {
                         childTop += getIdleSearchFieldHeight();
                     }
@@ -5517,7 +5525,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             contentView.addView(animatedStatusView, LayoutHelper.createFrame(20, 20, Gravity.LEFT | Gravity.TOP));
         }
         if (fragmentSearchField != null) {
-            contentView.addView(fragmentSearchField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP, 7, -2, 7, 0));
+            contentView.addView(fragmentSearchField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, SEARCH_FIELD_HEIGHT, Gravity.TOP, 16, 0, 16, 0));
+        }
+        if (shouldShowLargeTitle()) {
+            largeTitleView = new TextView(context);
+            largeTitleView.setText(getString(R.string.Chats));
+            largeTitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 34);
+            largeTitleView.setTypeface(AndroidUtilities.bold());
+            largeTitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+            contentView.addView(largeTitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LARGE_TITLE_HEIGHT, Gravity.TOP, 16, 0, 16, 0));
         }
 
 
@@ -14788,8 +14804,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         return !NaConfig.INSTANCE.getHideDialogsSearchField().Bool();
     }
 
+    private boolean shouldShowLargeTitle() {
+        return initialDialogsType == DIALOGS_TYPE_DEFAULT && !onlySelect;
+    }
+
+    private int getLargeTitleHeight() {
+        return shouldShowLargeTitle() && shouldShowIdleSearchField() ? dp(LARGE_TITLE_HEIGHT) : 0;
+    }
+
     private int getIdleSearchFieldHeight() {
-        return shouldShowIdleSearchField() ? dp(SEARCH_FIELD_HEIGHT) : 0;
+        return shouldShowIdleSearchField() ? dp(SEARCH_FIELD_HEIGHT) + getLargeTitleHeight() : 0;
     }
 
 }
