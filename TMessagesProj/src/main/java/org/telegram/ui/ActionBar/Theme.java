@@ -1677,9 +1677,9 @@ public class Theme {
             if (isDark != UNKNOWN) {
                 return isDark == DARK;
             }
-            if ("Dark Blue".equals(name) || "Night".equals(name) || "AMOLED".equals(name) || "Monet Dark".equals(name) || "Monet AMOLED".equals(name)) {
+            if ("Dark Blue".equals(name) || "Night".equals(name) || "AMOLED".equals(name) || "Monet Dark".equals(name) || "Monet AMOLED".equals(name) || "iOS Night".equals(name)) {
                 isDark = DARK;
-            } else if ("Blue".equals(name) || "Arctic Blue".equals(name) || "Day".equals(name) || "Monet Light".equals(name)) {
+            } else if ("Blue".equals(name) || "Arctic Blue".equals(name) || "Day".equals(name) || "Monet Light".equals(name) || "iOS".equals(name)) {
                 isDark = LIGHT;
             }
             if (isDark == UNKNOWN && pathToFile != null) {
@@ -4049,6 +4049,27 @@ public class Theme {
         sortAccents(themeInfo);
         themes.add(themeInfo);
         themesDict.put("Night", themeInfo);
+
+        // iOS-style themes (ios-ui branch): iOS blue bubbles, pure-black dark.
+        themeInfo = new ThemeInfo();
+        themeInfo.name = "iOS";
+        themeInfo.assetName = "ios_day.attheme";
+        themeInfo.previewBackgroundColor = 0xffffffff;
+        themeInfo.previewInColor = 0xffffffff;
+        themeInfo.previewOutColor = 0xff007aff;
+        themeInfo.sortIndex = 9;
+        themes.add(themeInfo);
+        themesDict.put("iOS", themeInfo);
+
+        themeInfo = new ThemeInfo();
+        themeInfo.name = "iOS Night";
+        themeInfo.assetName = "ios_night.attheme";
+        themeInfo.previewBackgroundColor = 0xff000000;
+        themeInfo.previewInColor = 0xff1c1c1e;
+        themeInfo.previewOutColor = 0xff0a84ff;
+        themeInfo.sortIndex = 10;
+        themes.add(themeInfo);
+        themesDict.put("iOS Night", themeInfo);
 
         themeInfo = new ThemeInfo();
         themeInfo.name = "AMOLED";

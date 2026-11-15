@@ -66,7 +66,9 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         }
 
         final int maxTotalWidthForTabs = width - getPaddingLeft() - getPaddingRight();
-        final int minTotalWidthForTabs = Math.min(dp(320), maxTotalWidthForTabs);
+        // iOS: the bar is full-width, so tabs stretch to fill the whole bar
+        // instead of clustering in a centred pill.
+        final int minTotalWidthForTabs = maxTotalWidthForTabs;
 
         int chosenPass = PASS_TEXT_SIZES_DP.length - 1;
         float lastMeasuredTextSize = -1;

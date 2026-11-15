@@ -356,7 +356,7 @@ object NaConfig {
         addConfig(
             "CenterActionBarTitle",
             ConfigItem.configTypeBool,
-            false
+            true // iOS: chat header (avatar + name) is centred
         )
     val showQuickReplyInBotCommands =
         addConfig(
