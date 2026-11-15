@@ -35,20 +35,31 @@ public final class MainTabsHelper {
         return NaConfig.INSTANCE.getMainTabsHideContacts().Bool();
     }
 
-    public static int getChatsPosition() {
+    // iOS tab order: Contacts / Calls / Chats / Settings. Profile is not a tab;
+    // it lives as the account card at the top of Settings.
+    public static int getContactsPosition() {
         return 0;
     }
 
-    public static int getContactsPosition() {
-        return 1;
+    public static int getCallsPosition() {
+        return isContactsTabHidden() ? 0 : 1;
     }
 
-    public static int getCallsOrSettingsPosition() {
+    public static int getChatsPosition() {
         return isContactsTabHidden() ? 1 : 2;
     }
 
-    public static int getProfilePosition() {
+    public static int getSettingsPosition() {
         return isContactsTabHidden() ? 2 : 3;
+    }
+
+    /** @deprecated Calls and Settings are separate tabs now; kept for old callers. */
+    public static int getCallsOrSettingsPosition() {
+        return getCallsPosition();
+    }
+
+    public static int getProfilePosition() {
+        return -1;
     }
 
     public static int getFragmentsCount() {
