@@ -198,6 +198,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private ImageView cameraImageView;
     private TextView titleView;
     private TextView subtitleView;
+    private TextView settingsTitleView;
     private TextView versionView;
     public boolean hasMainTabs;
 
@@ -385,7 +386,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, this::onLongClick);
         listView.adapter.setApplyBackground(false);
-        listView.setSections();
+        listView.setSections(dp(16), dp(14), false);
         listView.setPadding(0, AndroidUtilities.statusBarHeight + dp(12), 0, AndroidUtilities.navigationBarHeight + additionNavigationBarHeight);
         listView.setClipToPadding(false);
         listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -429,8 +430,14 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         topView = new FrameLayout(context);
 
+        settingsTitleView = new TextView(context);
+        settingsTitleView.setText(getString(R.string.Settings));
+        settingsTitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 34);
+        settingsTitleView.setTypeface(AndroidUtilities.bold());
+        topView.addView(settingsTitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 16, 8, 16, 0));
+
         avatarContainer = new FrameLayout(context);
-        topView.addView(avatarContainer, LayoutHelper.createFrame(120, 120, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 23 - 12, 0, 0));
+        topView.addView(avatarContainer, LayoutHelper.createFrame(120, 120, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 23 - 12 + 48, 0, 0));
         avatarContainer.setOnClickListener(v -> {
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId());
             if (user == null) {
@@ -493,14 +500,14 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         titleView.setGravity(Gravity.CENTER);
         titleView.setSingleLine();
         titleView.setEllipsize(TextUtils.TruncateAt.END);
-        topView.addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 16, 138.333f - 12, 16, 0));
+        topView.addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 16, 138.333f - 12 + 48, 16, 0));
 
         subtitleView = new TextView(context);
         subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         subtitleView.setGravity(Gravity.CENTER);
         subtitleView.setSingleLine();
         subtitleView.setEllipsize(TextUtils.TruncateAt.END);
-        topView.addView(subtitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 168 - 12, 0, 0));
+        topView.addView(subtitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 168 - 12 + 48, 0, 0));
 
         versionView = new TextView(context);
         versionView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -595,6 +602,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         contentView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
         titleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         subtitleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
+        settingsTitleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         searchItem.updateColor();
 
         final int navigationBarColor = getThemedColor(Theme.key_windowBackgroundWhite);
@@ -662,7 +670,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             return;
         }
 
-        items.add(UItem.asCustomShadow(topView, 200 - 12));
+        items.add(UItem.asCustomShadow(topView, 200 - 12 + 48));
 
         accountNumbers.clear();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {

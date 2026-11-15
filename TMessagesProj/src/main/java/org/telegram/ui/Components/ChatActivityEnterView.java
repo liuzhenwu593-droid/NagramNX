@@ -2736,7 +2736,8 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
         };
         frameLayout.setClipChildren(false);
-        textFieldContainer.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 0, 0, DEFAULT_HEIGHT, 0));
+        updateInputFieldPillBackground();
+        textFieldContainer.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 8, 6, DEFAULT_HEIGHT + 8, 6));
 
         emojiButton = new ChatActivityEnterViewAnimatedIconView(context) {
             @Override
@@ -11415,8 +11416,15 @@ public class ChatActivityEnterView extends FrameLayout implements
         return trendingStickersAlert;
     }
 
+    private void updateInputFieldPillBackground() {
+        if (messageEditTextContainer == null) return;
+        final boolean isDark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
+        messageEditTextContainer.setBackground(Theme.createRoundRectDrawable(dp(22), Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), isDark ? 0.12f : 0.07f)));
+    }
+
     @Override
     public void updateColors() {
+        updateInputFieldPillBackground();
         if (messageEditText != null) {
             messageEditText.setHintColor(getThemedColor(Theme.key_chat_messagePanelHint));
         }
